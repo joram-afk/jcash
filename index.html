@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joe Cash - Professional Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        :root {
+            --ink: #0b1120;
+            --ink-soft: #131b2e;
+            --violet: #6c5ce7;
+            --violet-deep: #4834d4;
+            --teal: #00d9a3;
+            --amber: #ffb020;
+            --coral: #ff5c7a;
+            --glass: rgba(255,255,255,0.06);
+            --glass-strong: rgba(255,255,255,0.09);
+            --glass-border: rgba(255,255,255,0.12);
+            --text: #eef1fa;
+            --text-dim: #97a1c2;
+            --text-faint: #5c6584;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--ink);
+            background-image:
+                radial-gradient(circle at 15% 0%, rgba(108,92,231,0.25), transparent 45%),
+                radial-gradient(circle at 85% 15%, rgba(0,217,163,0.15), transparent 40%);
+            background-attachment: fixed;
+            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px 16px 60px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; margin: 0; }
+
+        .app { width: 100%; max-width: 480px; }
+
+        /* --- Glass cards --- */
+        .glass {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* --- Inputs & buttons --- */
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            margin: 8px 0;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--text);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input::placeholder { color: var(--text-faint); }
+        input:focus { outline: none; border-color: var(--teal); background: rgba(255,255,255,0.07); }
+        input:disabled { color: var(--text-dim); }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--violet), var(--teal));
+            color: #06111f;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { background: rgba(255,255,255,0.08); color: var(--text-faint); cursor: not-allowed; }
+
+        .btn-ghost {
+            width: auto;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-dim);
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .btn-ghost:hover { border-color: var(--coral); color: var(--coral); }
+
+        .spinner { width: 17px; height: 17px; border: 2.5px solid rgba(6,17,31,0.25); border-radius: 50%; border-top-color: #06111f; animation: spin 0.8s linear infinite; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Auth screens --- */
+        .auth-screen {
+            position: fixed; inset: 0; z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(108,92,231,0.5), transparent 55%),
+                radial-gradient(circle at 80% 80%, rgba(0,217,163,0.35), transparent 50%),
+                var(--ink);
+        }
+        .auth-card { width: 100%; max-width: 360px; padding: 32px 28px; }
+        .auth-word { font-size: 1.6rem; font-weight: 700; text-align: center; letter-spacing: -0.02em; }
+        .auth-sub { text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-top: 6px; margin-bottom: 22px; }
+        .auth-toggle { text-align: center; cursor: pointer; margin-top: 16px; font-size: 0.85rem; color: var(--text-dim); }
+        .auth-toggle b { color: var(--teal); font-weight: 600; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+        .auth-divider hr { flex: 1; border: 0; border-top: 1px solid var(--glass-border); }
+        .auth-divider span { font-size: 11px; color: var(--text-faint); }
+
+        /* --- Top bar --- */
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .topbar-left { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; display: none; border: 2px solid var(--glass-border); }
+        .greeting { font-size: 1.15rem; font-weight: 600; }
+
+        /* --- Hero --- */
+        .hero {
+            background: linear-gradient(135deg, var(--violet-deep) 0%, var(--violet) 45%, var(--teal) 100%);
+            border-radius: 24px;
+            padding: 26px 24px 22px;
+            margin-bottom: 18px;
+            color: #06111f;
+            box-shadow: 0 20px 40px -20px rgba(108,92,231,0.6);
+        }
+        .hero-label { font-size: 0.8rem; opacity: 0.75; font-weight: 500; }
+        .hero-amount { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+        .hero-stats { display: flex; gap: 10px; margin-top: 18px; }
+        .hero-stat { flex: 1; background: rgba(6,17,31,0.14); border-radius: 12px; padding: 10px 12px; }
+        .hero-stat-value { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .hero-stat-label { font-size: 0.72rem; opacity: 0.75; margin-top: 1px; }
+
+        /* --- Section tabs --- */
+        .tabs { display: flex; gap: 6px; padding: 4px; margin-bottom: 18px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 14px; }
+        .tab-btn { width: auto; flex: 1; background: transparent; color: var(--text-dim); font-weight: 500; padding: 10px; border-radius: 10px; }
+        .tab-btn.active { background: var(--glass-strong); color: var(--text); }
+
+        /* --- Cards --- */
+        .card { padding: 22px 20px; margin-bottom: 18px; }
+        .card-title { font-size: 1.05rem; font-weight: 600; }
+        .card-sub { font-size: 0.82rem; color: var(--text-dim); margin-top: 3px; margin-bottom: 16px; }
+
+        /* --- Method toggle --- */
+        .method-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+        .method-btn { width: auto; flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: var(--text-dim); font-weight: 500; padding: 11px; font-size: 13.5px; }
+        .method-btn.active[data-provider="mpesa"] { background: rgba(0,217,163,0.14); border-color: var(--teal); color: var(--teal); }
+        .method-btn.active[data-provider="airtel"] { background: rgba(255,92,122,0.14); border-color: var(--coral); color: var(--coral); }
+
+        /* --- Transaction list --- */
+        .list-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+        .refresh-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.12); transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--teal); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .txn-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .txn-row:last-child { border-bottom: none; }
+        .txn-badge { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+        .txn-badge.badge-mpesa { background: rgba(0,217,163,0.16); color: var(--teal); }
+        .txn-badge.badge-airtel { background: rgba(255,92,122,0.16); color: var(--coral); }
+        .txn-info { flex: 1; min-width: 0; }
+        .txn-phone { font-weight: 600; font-size: 14px; }
+        .txn-ref { font-size: 11.5px; color: var(--text-faint); margin-top: 1px; }
+        .txn-right { text-align: right; }
+        .txn-amount { font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+        .txn-actions { display: flex; gap: 6px; margin-top: 5px; justify-content: flex-end; }
+        .txn-actions button { width: auto; padding: 4px 9px; font-size: 10.5px; font-weight: 500; background: rgba(255,255,255,0.07); color: var(--text-dim); }
+        .txn-actions button.pdf-btn:hover { color: var(--teal); }
+        .txn-actions button.del-btn:hover { color: var(--coral); }
+
+        .badge { padding: 3px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 600; display: inline-block; margin-top: 4px; }
+        .bg-success { background: rgba(0,217,163,0.16); color: var(--teal); }
+        .bg-pending { background: rgba(255,176,32,0.16); color: var(--amber); }
+        .bg-failed { background: rgba(255,92,122,0.16); color: var(--coral); }
+
+        .empty-state { text-align: center; padding: 30px 10px; color: var(--text-faint); font-size: 13.5px; }
+
+        /* --- Profile --- */
+        .avatar-upload { width: 84px; height: 84px; margin: 0 auto 20px; position: relative; cursor: pointer; }
+        .avatar-upload img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); }
+        .avatar-overlay { position: absolute; inset: 0; border-radius: 50%; background: rgba(6,17,31,0.6); display: flex; align-items: center; justify-content: center; color: var(--text); opacity: 0; transition: opacity 0.2s; font-size: 10.5px; text-align: center; }
+        .avatar-upload:hover .avatar-overlay { opacity: 1; }
+        .field-label { font-size: 11.5px; color: var(--text-faint); font-weight: 500; margin: 14px 0 2px; }
+        .divider { border: 0; border-top: 1px solid var(--glass-border); margin: 20px 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay" class="auth-screen">
+        <div class="glass auth-card">
+            <div class="auth-word" id="auth-title">Joe Cash</div>
+            <p class="auth-sub">Send and receive mobile money</p>
+            <input type="text" id="auth-name" placeholder="Full name" style="display: none;">
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-pass" placeholder="Password">
+            <input type="password" id="auth-pass-confirm" placeholder="Confirm password" style="display: none;">
+            <button id="auth-btn">
+                <div class="spinner" id="authSpinner"></div>
+                <span id="authBtnText">Login</span>
+            </button>
+            <p class="auth-toggle" id="auth-toggle">New here? <b>Create account</b></p>
+
+            <div class="auth-divider">
+                <hr><span>or</span><hr>
+            </div>
+
+            <div id="g_id_onload"
+                data-client_id="171097836692-900i39iqqou7p5bh6fv0s4uidov089uh.apps.googleusercontent.com"
+                data-callback="handleGoogleCredentialResponse">
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="filled_black" data-text="continue_with" data-size="large" data-width="300"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="phone-prompt-overlay" class="auth-screen" style="display: none;">
+        <div class="glass auth-card">
+            <h2 style="text-align:center; font-size: 1.3rem;">One last step</h2>
+            <p class="auth-sub">Add your Safaricom number so you can send and receive payments.</p>
+            <input type="text" id="add-phone-input" placeholder="07XXXXXXXX">
+            <button id="add-phone-btn">
+                <div class="spinner" id="addPhoneSpinner"></div>
+                <span>Save number</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="app">
+        <div class="topbar">
+            <div class="topbar-left">
+                <img id="header-pic" class="avatar" src="https://via.placeholder.com/40">
+                <h1 class="greeting" id="user-welcome">Home</h1>
+            </div>
+            <button class="btn-ghost" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="hero">
+            <div class="hero-label">Total spent</div>
+            <div class="hero-amount" id="stat-total">KES 0.00</div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-count">0</div>
+                    <div class="hero-stat-label">Successful</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" id="stat-rate">0%</div>
+                    <div class="hero-stat-label">Success rate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button id="tab-dash" class="tab-btn active" onclick="switchTab('dashboard')">Home</button>
+            <button id="tab-prof" class="tab-btn" onclick="switchTab('profile')">Profile</button>
+        </div>
+
+        <div id="section-dashboard" style="display: block;">
+
+            <div class="glass card">
+                <div class="card-title">Send money</div>
+                <p class="card-sub">Enter a phone number and amount.</p>
+
+                <div class="method-toggle">
+                    <button type="button" id="method-mpesa" data-provider="mpesa" class="method-btn active" onclick="setPaymentMethod('mpesa')">M-Pesa</button>
+                    <button type="button" id="method-airtel" data-provider="airtel" class="method-btn" onclick="setPaymentMethod('airtel')">Airtel Money</button>
+                </div>
+
+                <input type="text" id="phone" placeholder="07XXXXXXXX">
+                <input type="number" id="amount" placeholder="Amount (KES)">
+                <button id="payBtn" disabled style="margin-top: 6px;">
+                    <div class="spinner" id="paySpinner"></div>
+                    <span id="btnText">Pay with M-Pesa</span>
+                </button>
+                <p id="status" style="text-align: center; font-size: 13px; color: var(--text-dim);"></p>
+            </div>
+
+            <div class="glass card">
+                <div class="list-controls">
+                    <div class="card-title" style="margin: 0;">Recent activity</div>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div class="refresh-toggle">
+                            <span>Auto refresh</span>
+                            <label class="switch">
+                                <input type="checkbox" id="autoRefreshToggle" checked onchange="toggleAutoRefresh()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom: 6px;">
+                    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search by receipt or phone..." style="margin: 0;">
+                    <button class="btn-ghost" onclick="purgeData('failed')" style="flex-shrink:0;">Clear failed</button>
+                </div>
+
+                <div id="txn-body"></div>
+            </div>
+        </div>
+
+        <div id="section-profile" style="display: none;">
+            <div class="glass card">
+                <div class="card-title" style="text-align: center; margin-bottom: 20px;">Edit profile</div>
+
+                <div class="avatar-upload" onclick="document.getElementById('fileInput').click()">
+                    <img id="prof-pic-preview" src="https://via.placeholder.com/100">
+                    <div class="avatar-overlay">Change photo</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+
+                <div class="field-label">Full name</div>
+                <input type="text" id="prof-name" placeholder="Full name">
+
+                <div class="field-label">Phone number (read only)</div>
+                <input type="text" id="prof-phone" disabled>
+
+                <hr class="divider">
+
+                <div class="card-title" style="font-size: 0.95rem; margin-bottom: 10px;">Change password</div>
+                <input type="password" id="prof-current-pass" placeholder="Current password (required)">
+                <input type="password" id="prof-new-pass" placeholder="New password">
+
+                <button onclick="saveProfile()" id="saveProfBtn" style="margin-top: 12px;">
+                    <div class="spinner" id="profSpinner"></div>
+                    <span>Update profile</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let currentUser = JSON.parse(localStorage.getItem('joe_user'));
+        let autoRefreshInterval = null;
+        let newProfilePicBase64 = null;
+
+        // --- 1. AUTH LOGIC ---
+        if (currentUser) {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('user-welcome').innerText = `Hello, ${currentUser.fullName.split(' ')[0]}`;
+            if(currentUser.profilePic) {
+                const headerPic = document.getElementById('header-pic');
+                headerPic.src = currentUser.profilePic;
+                headerPic.style.display = 'block';
+            }
+            if (currentUser.needsPhone) {
+                document.getElementById('phone-prompt-overlay').style.display = 'flex';
+            }
+            startAutoRefresh();
+        }
+
+        document.getElementById('auth-toggle').addEventListener('click', () => {
+            const isLogin = document.getElementById('authBtnText').innerText.includes("Login");
+            document.getElementById('auth-title').innerText = isLogin ? "Create account" : "Joe Cash";
+            document.getElementById('auth-name').style.display = isLogin ? "block" : "none";
+            document.getElementById('auth-pass-confirm').style.display = isLogin ? "block" : "none";
+            document.getElementById('authBtnText').innerText = isLogin ? "Register now" : "Login to dashboard";
+            document.getElementById('auth-toggle').innerHTML = isLogin ? "Already have an account? <b>Login</b>" : "New here? <b>Create account</b>";
+        });
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        document.getElementById('auth-email').addEventListener('input', (e) => {
+            const isValid = e.target.value === '' || emailRegex.test(e.target.value.trim());
+            e.target.style.borderColor = isValid ? 'var(--glass-border)' : 'var(--coral)';
+        });
+
+        document.getElementById('auth-btn').addEventListener('click', async () => {
+            const authBtn = document.getElementById('auth-btn');
+            const authSpinner = document.getElementById('authSpinner');
+            const isLoginMode = document.getElementById('authBtnText').innerText.includes("Login");
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-pass').value;
+            const confirmPassword = document.getElementById('auth-pass-confirm').value;
+            const fullName = document.getElementById('auth-name').value;
+            const endpoint = isLoginMode ? '/login' : '/register';
+
+            if (!emailRegex.test(email.trim())) {
+                document.getElementById('auth-email').style.borderColor = 'var(--coral)';
+                Swal.fire('Invalid email', 'Please enter a valid email address', 'warning');
+                return;
+            }
+
+            authBtn.disabled = true;
+            authSpinner.style.display = 'block';
+
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, email, password, confirmPassword })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('joe_user', JSON.stringify(data));
+                    location.reload();
+                } else { Swal.fire('Error', data.error, 'error'); }
+            } catch (e) { Swal.fire('Error', 'Server is offline', 'error'); }
+            finally {
+                authBtn.disabled = false;
+                authSpinner.style.display = 'none';
+            }
+        });
+
+        // --- 1b. GOOGLE SIGN-IN ---
+        async function handleGoogleCredentialResponse(response) {
+            try {
+                const res = await fetch(`${API_BASE}/auth/google`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('joe_user', JSON.stringify(data));
+                    location.reload();
+                } else {
+                    Swal.fire('Error', data.error || 'Google sign-in failed', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error', 'Could not reach server', 'error');
+            }
+        }
+
+        const phoneRegex = /^(?:254|0)(?:7(?:[0-2][0-9]|4[0123568]|5[7-9]|6[89]|9[0-9])|1(?:(?:[0-5]|[89])|4[0-3]|8[0-2]))\d{6}$/;
+
+        document.getElementById('add-phone-btn').addEventListener('click', async () => {
+            const phone = document.getElementById('add-phone-input').value;
+            if (!phoneRegex.test(phone)) {
+                Swal.fire('Invalid number', 'Please enter a valid Safaricom number', 'warning');
+                return;
+            }
+            const btn = document.getElementById('add-phone-btn');
+            const spinner = document.getElementById('addPhoneSpinner');
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            try {
+                const res = await fetch(`${API_BASE}/profile/add-phone`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({ phone })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser.phone = phone;
+                    currentUser.needsPhone = false;
+                    localStorage.setItem('joe_user', JSON.stringify(currentUser));
+                    document.getElementById('phone-prompt-overlay').style.display = 'none';
+                    Swal.fire('Saved!', 'You can now make payments.', 'success');
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error', 'Could not save number', 'error');
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+            }
+        });
+
+        function logout() { localStorage.removeItem('joe_user'); location.reload(); }
+
+        // --- 2. TABS & NAVIGATION ---
+        function switchTab(tab) {
+            if (tab === 'dashboard') {
+                document.getElementById('section-dashboard').style.display = 'block';
+                document.getElementById('section-profile').style.display = 'none';
+                document.getElementById('tab-dash').classList.add('active');
+                document.getElementById('tab-prof').classList.remove('active');
+            } else {
+                document.getElementById('section-dashboard').style.display = 'none';
+                document.getElementById('section-profile').style.display = 'block';
+                document.getElementById('tab-dash').classList.remove('active');
+                document.getElementById('tab-prof').classList.add('active');
+                loadProfileData();
+            }
+        }
+
+        // --- 3. AUTO REFRESH LOGIC ---
+        function startAutoRefresh() {
+            fetchHistory();
+            autoRefreshInterval = setInterval(() => {
+                if(document.getElementById('autoRefreshToggle').checked) {
+                    fetchHistory();
+                }
+            }, 5000);
+        }
+
+        function toggleAutoRefresh() {
+            const isOn = document.getElementById('autoRefreshToggle').checked;
+        }
+
+        // --- 4. PROFILE MANAGEMENT ---
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) {
+                Swal.fire('Too large', 'Please select an image under 2MB', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                newProfilePicBase64 = reader.result;
+                document.getElementById('prof-pic-preview').src = newProfilePicBase64;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function loadProfileData() {
+            try {
+                const res = await fetch(`${API_BASE}/profile?userId=${currentUser.userId}`);
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('prof-name').value = data.fullName;
+                    document.getElementById('prof-phone').value = data.phone;
+                    if (data.profilePic) {
+                        document.getElementById('prof-pic-preview').src = data.profilePic;
+                    }
+                }
+            } catch (e) { console.error("Profile load failed"); }
+        }
+
+        async function saveProfile() {
+            const fullName = document.getElementById('prof-name').value;
+            const currentPassword = document.getElementById('prof-current-pass').value;
+            const newPassword = document.getElementById('prof-new-pass').value;
+
+            const btn = document.getElementById('saveProfBtn');
+            const spinner = document.getElementById('profSpinner');
+
+            btn.disabled = true;
+            spinner.style.display = 'block';
+
+            const payload = { userId: currentUser.userId, fullName, currentPassword, newPassword };
+            if (newProfilePicBase64) payload.profilePic = newProfilePicBase64;
+
+            try {
+                const res = await fetch(`${API_BASE}/profile/update`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    Swal.fire('Success', data.message, 'success');
+                    currentUser.fullName = fullName;
+                    if(data.profilePic) currentUser.profilePic = data.profilePic;
+                    localStorage.setItem('joe_user', JSON.stringify(currentUser));
+
+                    document.getElementById('user-welcome').innerText = `Hello, ${fullName.split(' ')[0]}`;
+                    if(currentUser.profilePic) {
+                        const headerPic = document.getElementById('header-pic');
+                        headerPic.src = currentUser.profilePic;
+                        headerPic.style.display = 'block';
+                    }
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error', 'Update failed', 'error');
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                document.getElementById('prof-current-pass').value = "";
+                document.getElementById('prof-new-pass').value = "";
+            }
+        }
+
+        // --- 5. VALIDATION & UI ---
+        document.getElementById('phone').addEventListener('input', (e) => {
+            const regex = /^(?:254|0)(?:7(?:[0-2][0-9]|4[0123568]|5[7-9]|6[89]|9[0-9])|1(?:(?:[0-5]|[89])|4[0-3]|8[0-2]))\d{6}$/;
+            const isValid = regex.test(e.target.value);
+            document.getElementById('payBtn').disabled = !isValid;
+            e.target.style.borderColor = isValid ? 'var(--teal)' : 'var(--glass-border)';
+        });
+
+        // --- 6. TRANSACTIONS & PDF ---
+        async function fetchHistory() {
+            if (!currentUser) return;
+            try {
+                const response = await fetch(`${API_BASE}/transactions`, {
+                    headers: { "Authorization": `Bearer ${currentUser.token}` }
+                });
+
+                const data = await response.json();
+
+                let totalSuccess = 0;
+                let successCount = 0;
+                const listBody = document.getElementById('txn-body');
+
+                if(document.getElementById('searchInput').value !== "") return;
+
+                if (data.length === 0) {
+                    listBody.innerHTML = `<div class="empty-state">No transactions yet — send your first payment above.</div>`;
+                } else {
+                    listBody.innerHTML = "";
+                    data.forEach(txn => {
+                        if(txn.status === 'Success') {
+                            totalSuccess += txn.amount;
+                            successCount++;
+                        }
+
+                        const statusClass = txn.status === 'Success' ? 'bg-success' : (txn.status === 'Pending' ? 'bg-pending' : 'bg-failed');
+                        const isAirtel = txn.provider === 'airtel';
+
+                        listBody.innerHTML += `
+                            <div class="txn-row">
+                                <div class="txn-badge ${isAirtel ? 'badge-airtel' : 'badge-mpesa'}">${isAirtel ? 'A' : 'M'}</div>
+                                <div class="txn-info">
+                                    <div class="txn-phone">${txn.phoneNumber}</div>
+                                    <div class="txn-ref">${txn.receiptNumber || 'Ref: ' + txn.checkoutRequestID.slice(-6)}</div>
+                                </div>
+                                <div class="txn-right">
+                                    <div class="txn-amount">KES ${txn.amount}</div>
+                                    <span class="badge ${statusClass}">${txn.status}</span>
+                                    <div class="txn-actions">
+                                        ${txn.status === 'Success' ?
+                                            `<button class="pdf-btn" onclick="downloadReceipt('${txn.date}', '${txn.phoneNumber}', ${txn.amount}, '${txn.receiptNumber}')">PDF</button>` : ''}
+                                        <button class="del-btn" onclick="deleteTxn('${txn._id}')">Delete</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                }
+
+                document.getElementById('stat-total').innerText = `KES ${totalSuccess.toLocaleString()}`;
+                document.getElementById('stat-count').innerText = successCount;
+                const rate = data.length ? Math.round((successCount / data.length) * 100) : 0;
+                document.getElementById('stat-rate').innerText = `${rate}%`;
+
+            } catch (e) { console.error("History sync error"); }
+        }
+
+        function downloadReceipt(date, phone, amount, receipt) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFillColor(74, 98, 206);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.text("JOE CASH", 20, 25);
+            doc.setFontSize(10);
+            doc.text("OFFICIAL PAYMENT RECEIPT", 20, 32);
+            doc.setTextColor(44, 62, 80);
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, 50, 190, 50);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("Transaction Details", 20, 60);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Receipt Number:`, 20, 75); doc.text(receipt, 70, 75);
+            doc.text(`Date & Time:`, 20, 85); doc.text(new Date(date).toLocaleString(), 70, 85);
+            doc.text(`Paid From:`, 20, 95); doc.text(phone, 70, 95);
+            doc.text(`Currency:`, 20, 105); doc.text("Kenya Shillings (KES)", 70, 105);
+            doc.setDrawColor(74, 98, 206);
+            doc.setLineWidth(1);
+            doc.line(20, 115, 190, 115);
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text(`TOTAL PAID: KES ${amount.toLocaleString()}`, 20, 130);
+            doc.setTextColor(200, 200, 200);
+            doc.setFontSize(40);
+            doc.text("VERIFIED", 60, 180, { angle: 45 });
+            doc.save(`JoeCash_${receipt}.pdf`);
+        }
+
+        // Payment Action
+        let paymentMethod = 'mpesa';
+
+        function setPaymentMethod(method) {
+            paymentMethod = method;
+            document.getElementById('method-mpesa').classList.toggle('active', method === 'mpesa');
+            document.getElementById('method-airtel').classList.toggle('active', method === 'airtel');
+            document.getElementById('btnText').innerText = method === 'mpesa' ? 'Pay with M-Pesa' : 'Pay with Airtel Money';
+        }
+
+        function pollAirtelStatus(transactionId, token, attemptsLeft) {
+            if (attemptsLeft <= 0) return;
+            setTimeout(async () => {
+                try {
+                    await fetch(`${API_BASE}/airtel/status/${transactionId}`, {
+                        method: 'POST',
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    fetchHistory();
+                } catch (e) { /* ignore, will retry */ }
+                pollAirtelStatus(transactionId, token, attemptsLeft - 1);
+            }, 4000);
+        }
+
+        document.getElementById('payBtn').addEventListener('click', async () => {
+            const phone = document.getElementById('phone').value;
+            const amount = document.getElementById('amount').value;
+
+            const btn = document.getElementById('payBtn');
+            const spinner = document.getElementById('paySpinner');
+            const btnText = document.getElementById('btnText');
+
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            btnText.innerText = 'Sending prompt...';
+
+            try {
+                const user = JSON.parse(localStorage.getItem('joe_user'));
+                const token = user?.token;
+                const endpoint = paymentMethod === 'mpesa' ? '/stkpush' : '/airtel/collect';
+
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ phone, amount })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const providerName = paymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money';
+                    Swal.fire('Sent!', `Check your phone for the ${providerName} prompt.`, 'success');
+                    fetchHistory();
+                    if (paymentMethod === 'airtel' && data.transactionId) {
+                        pollAirtelStatus(data.transactionId, token, 8);
+                    }
+                } else {
+                    Swal.fire('Failed', data.error || 'Payment request failed', 'error');
+                }
+
+            } catch (err) {
+                Swal.fire('Error', 'Could not reach server', 'error');
+                console.error(err);
+            }
+
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            btnText.innerText = paymentMethod === 'mpesa' ? 'Pay with M-Pesa' : 'Pay with Airtel Money';
+        });
+
+        async function deleteTxn(id) {
+            const result = await Swal.fire({
+                title: 'Delete record?',
+                text: "This cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff5c7a',
+                confirmButtonText: 'Yes, delete'
+            });
+            if(result.isConfirmed) {
+                await fetch(`${API_BASE}/transactions/${id}`, { method: 'DELETE' });
+                fetchHistory();
+            }
+        }
+
+        async function purgeData(type) {
+            const result = await Swal.fire({
+                title: 'Clear failed transactions?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff5c7a',
+                confirmButtonText: 'Yes, clear'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                await fetch(`${API_BASE}/transactions/purge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type })
+                });
+                fetchHistory();
+            } catch (e) { Swal.fire('Error', 'Could not clear transactions', 'error'); }
+        }
+
+        function filterTable() {
+            const val = document.getElementById("searchInput").value.toLowerCase();
+            const rows = document.querySelectorAll("#txn-body .txn-row");
+            rows.forEach(row => row.style.display = row.innerText.toLowerCase().includes(val) ? "" : "none");
+        }
+    </script>
+</body>
+</html>
